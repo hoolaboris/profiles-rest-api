@@ -38,3 +38,23 @@ class UserProfileSerializer(serializers.ModelSerializer):
             instance.set_password(password)
 
         return super().update(instance, validated_data)
+
+
+class UserFeedSerializer(serializers.ModelSerializer):
+    """Serializes a user feed object"""
+    class Meta:
+        model = models.UserFeed
+        fields = '__all__'
+        extra_kwargs = {
+            'user_profile': {
+                'read_only': True
+            }
+        }
+
+    def create(self, validated_data):
+        """Create and return a new feed"""
+        feed = models.UserFeed.objects.create_feed(
+            self.context['request'].user,
+            validated_data['status_text']
+        )
+        return feed

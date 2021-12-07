@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractBaseUser
 from django.contrib.auth.models import PermissionsMixin
 from django.contrib.auth.models import BaseUserManager
+from django.conf import settings
 
 
 class UserProfileManager(BaseUserManager):
@@ -55,3 +56,39 @@ class UserProfile(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         """Return string representation of user"""
         return self.email
+
+
+class UserFeedManager(models.Manager):
+    def create_feed(self, user_profile, status_text):
+        """Create a new feed"""
+        if not user_profile:
+            raise ValueError('Must be authenticated in order to post feed')
+
+        if not status_text:
+            raise ValueError('Feed text must not be empty')
+
+        feed = self.model(user_profile=user_profile, status_text=status_text)
+        feed.save(using=self._db)
+
+        return feed
+
+
+class UserFeed(models.Model):
+    """Database model for user feed"""
+    user_profile = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    status_text = models.CharField(max_length=255)
+    created_on = models.DateTimeField(auto_now_add=True)
+
+    objects = UserFeedManager()
+
+    def get_feed(self):
+        """Retrieve text of feed"""
+        return self.status_text
+
+    def get_author(self):
+        """Retrieve author of feed"""
+        return self.user_profile
+
+    def __str__(self):
+        """Return string representation of feed"""
+        return self.status_text
